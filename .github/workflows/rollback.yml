@@ -1,0 +1,90 @@
+name: Roll Back Fly.io
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Optional image override; leave blank to use the previous completed release
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    name: Roll back production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: fly-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://nickebert.co
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      ROLLBACK_IMAGE: ${{ inputs.image }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1
+        with:
+          version: 0.4.104
+
+      - name: Resolve rollback image
+        run: |
+          if [[ -n "$ROLLBACK_IMAGE" ]]; then
+            target_image="$ROLLBACK_IMAGE"
+          else
+            target_image="$(flyctl releases --app budoso-homepage --image --json \
+              | jq -er '[.[] | select(.Status == "complete")] \
+                | sort_by(.CreatedAt) | reverse \
+                | if length < 2 then error("No previous completed release") else .[1].ImageRef end')"
+          fi
+
+          if [[ ! "$target_image" =~ ^registry\.fly\.io/budoso-homepage:[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+            echo "Rollback image must belong to registry.fly.io/budoso-homepage." >&2
+            exit 1
+          fi
+
+          echo "TARGET_IMAGE=$target_image" >> "$GITHUB_ENV"
+
+      - name: Record replaced image
+        run: |
+          replaced_image="$(flyctl releases --app budoso-homepage --image --json \
+            | jq -er '[.[] | select(.Status == "complete")][0].ImageRef')"
+          {
+            echo "### Production rollback"
+            echo
+            echo "Replaced image: \`$replaced_image\`"
+            echo "Rollback image: \`$TARGET_IMAGE\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy previous image
+        run: flyctl deploy --app budoso-homepage --image "$TARGET_IMAGE"
+
+      - name: Smoke-test production
+        run: |
+          homepage="$(mktemp)"
+          trap 'rm -f "$homepage"' EXIT
+
+          curl --fail --silent --show-error \
+            --retry 5 --retry-all-errors --retry-delay 3 \
+            https://nickebert.co/ > "$homepage"
+          grep -Fq '<title>Nick Ebert - Senior Software Engineer</title>' "$homepage"
+
+          content_type="$(curl --fail --silent --show-error \
+            --retry 5 --retry-all-errors --retry-delay 3 \
+            --output /dev/null --write-out '%{content_type}' \
+            https://nickebert.co/Nicholas-Ebert-Resume.pdf)"
+          case "$content_type" in
+            application/pdf*) ;;
+            *) echo "Unexpected resume content type: $content_type" >&2; exit 1 ;;
+          esac
+
+          flyctl status --app budoso-homepage
