@@ -5,8 +5,8 @@
       <HeroSection />
       <AboutSection />
       <ExperienceSection />
-      <EducationSection />
       <ProjectsSection />
+      <EducationSection />
     </main>
     <AppFooter />
   </div>

@@ -157,18 +157,18 @@
               About
             </a>
             <a
-              v-if="hasProjects"
-              href="#projects"
-              class="text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Projects
-            </a>
-            <a
               v-if="hasExperience"
               href="#experience"
               class="text-sm text-gray-600 hover:text-gray-800 transition-colors"
             >
               Experience
+            </a>
+            <a
+              v-if="hasProjects"
+              href="#projects"
+              class="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Projects
             </a>
             <a
               v-if="hasEducation"

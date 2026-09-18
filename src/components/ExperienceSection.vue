@@ -15,28 +15,22 @@
         <div class="lg:col-span-8">
           <div class="relative">
             <div
-              v-for="(exp, index) in siteConfig.experience"
+              class="absolute left-1.5 top-8 bottom-8 w-px bg-gray-200"
+              aria-hidden="true"
+            />
+            <div
+              v-for="exp in siteConfig.experience"
               :key="`${exp.company}-${exp.title}`"
-              class="relative mb-12 last:mb-0"
+              class="relative pl-8 mb-10 last:mb-0"
             >
-              <!-- Timeline dot at top of card -->
               <div
-                class="absolute left-1/2 -top-2 w-4 h-4 bg-white border-2 rounded-full -translate-x-1/2 z-20 transition-all duration-300"
-                :style="{ 
-                  borderColor: siteConfig.accentColor, 
-                  backgroundColor: siteConfig.accentColor 
-                }"
+                class="absolute left-0 top-7 w-3 h-3 rounded-full ring-4 ring-white z-10"
+                :style="{ backgroundColor: siteConfig.accentColor }"
+                aria-hidden="true"
               />
 
-              <!-- Connecting line below card -->
-              <div
-                v-if="index < siteConfig.experience.length - 1"
-                class="absolute left-1/2 bottom-0 w-0.5 h-12 bg-gray-300 -translate-x-1/2 translate-y-full z-10"
-              />
-
-              <!-- Experience card -->
               <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-5 md:p-6 hover:shadow-md transition-shadow duration-300">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-6 mb-4">
                   <div>
                     <h3 class="text-lg sm:text-xl font-semibold text-gray-900">
                       {{ exp.title }}
@@ -48,7 +42,7 @@
                       {{ exp.company }}
                     </p>
                   </div>
-                  <span class="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-0">
+                  <span class="text-xs sm:text-sm text-gray-500 sm:whitespace-nowrap sm:pt-1">
                     {{ exp.dateRange }}
                   </span>
                 </div>

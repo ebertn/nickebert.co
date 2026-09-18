@@ -14,20 +14,20 @@
             About
           </a>
         </li>
-        <li v-if="hasProjects">
-          <a
-            href="#projects"
-            class="text-gray-700 hover:text-black transition-colors font-medium"
-          >
-            Projects
-          </a>
-        </li>
         <li v-if="hasExperience">
           <a
             href="#experience"
             class="text-gray-700 hover:text-black transition-colors font-medium"
           >
             Experience
+          </a>
+        </li>
+        <li v-if="hasProjects">
+          <a
+            href="#projects"
+            class="text-gray-700 hover:text-black transition-colors font-medium"
+          >
+            Projects
           </a>
         </li>
         <li v-if="hasEducation">
