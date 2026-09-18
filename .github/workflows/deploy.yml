@@ -1,0 +1,99 @@
+name: CI and Deploy
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 23.10.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check and build
+        run: npm run build:check
+
+  deploy:
+    name: Deploy to Fly.io
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: fly-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://nickebert.co
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1
+        with:
+          version: 0.4.104
+
+      - name: Record rollback image
+        run: |
+          rollback_image="$(flyctl releases --app budoso-homepage --image --json \
+            | jq -er '[.[] | select(.Status == "complete")][0].ImageRef')"
+          {
+            echo "### Production deployment"
+            echo
+            echo "Rollback image: \`$rollback_image\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy
+        run: flyctl deploy --app budoso-homepage --remote-only --image-label "$GITHUB_SHA"
+
+      - name: Smoke-test production
+        run: |
+          homepage="$(mktemp)"
+          trap 'rm -f "$homepage"' EXIT
+
+          curl --fail --silent --show-error \
+            --retry 5 --retry-all-errors --retry-delay 3 \
+            https://nickebert.co/ > "$homepage"
+          grep -Fq '<title>Nick Ebert - Senior Software Engineer</title>' "$homepage"
+
+          content_type="$(curl --fail --silent --show-error \
+            --retry 5 --retry-all-errors --retry-delay 3 \
+            --output /dev/null --write-out '%{content_type}' \
+            https://nickebert.co/Nicholas-Ebert-Resume.pdf)"
+          case "$content_type" in
+            application/pdf*) ;;
+            *) echo "Unexpected resume content type: $content_type" >&2; exit 1 ;;
+          esac
+
+          flyctl status --app budoso-homepage
+
+      - name: Record deployed image
+        run: |
+          deployed_image="$(flyctl releases --app budoso-homepage --image --json \
+            | jq -er '[.[] | select(.Status == "complete")][0].ImageRef')"
+          {
+            echo
+            echo "Deployed image: \`$deployed_image\`"
+            echo "Commit: \`$GITHUB_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
