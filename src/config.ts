@@ -48,7 +48,7 @@ export const siteConfig: SiteConfig = {
     email: "nick.ebert2@gmail.com",
     linkedin: "https://linkedin.com/in/ebertn",
     github: "https://github.com/ebertn",
-    resume: "/Nicholas-Ebert-Resume.pdf",
+    resume: "/Nicholas-Ebert-Resume.pdf?v=29084142686f",
   },
   aboutMe:
     "I'm a senior software engineer specializing in distributed systems, data platforms, and production ML infrastructure. I build systems spanning real-time streaming, large-scale data processing, APIs, and user-facing tools. My work has supported advertising forecasting across Disney's streaming portfolio and connected-vehicle products serving tens of millions of vehicles worldwide.",
@@ -79,7 +79,7 @@ export const siteConfig: SiteConfig = {
         "Lead engineering for the Inventory Forecasting Portal, including technical design, roadmap planning, and delivery",
         "Design a governed, self-service forecast-adjustment platform to replace manual engineer-operated workflows",
         "Migrate production pipelines from Airflow to Databricks and Unity Catalog and deliver GDPR viewer-consent support for Disney+'s European ad-platform migration",
-        "Deploy ML inference services and lead production incident RCA and remediation to improve API reliability and observability",
+        "Lead root cause analysis and remediation of production incidents to improve forecast API reliability and observability",
       ],
     },
     {
