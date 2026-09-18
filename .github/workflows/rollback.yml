@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: Full registry.fly.io/budoso-homepage image from a deploy summary
-        required: true
+        description: Optional image override; leave blank to use the previous completed release
+        required: false
         type: string
 
 permissions:
@@ -28,18 +28,31 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
 
       - name: Set up flyctl
         uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1
         with:
           version: 0.4.104
 
-      - name: Validate rollback image
+      - name: Resolve rollback image
         run: |
-          if [[ ! "$ROLLBACK_IMAGE" =~ ^registry\.fly\.io/budoso-homepage:[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+          if [[ -n "$ROLLBACK_IMAGE" ]]; then
+            target_image="$ROLLBACK_IMAGE"
+          else
+            target_image="$(flyctl releases --app budoso-homepage --image --json \
+              | jq -er '[.[] | select(.Status == "complete")] \
+                | sort_by(.CreatedAt) | reverse \
+                | if length < 2 then error("No previous completed release") else .[1].ImageRef end')"
+          fi
+
+          if [[ ! "$target_image" =~ ^registry\.fly\.io/budoso-homepage:[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
             echo "Rollback image must belong to registry.fly.io/budoso-homepage." >&2
             exit 1
           fi
+
+          echo "TARGET_IMAGE=$target_image" >> "$GITHUB_ENV"
 
       - name: Record replaced image
         run: |
@@ -49,11 +62,11 @@ jobs:
             echo "### Production rollback"
             echo
             echo "Replaced image: \`$replaced_image\`"
-            echo "Rollback image: \`$ROLLBACK_IMAGE\`"
+            echo "Rollback image: \`$TARGET_IMAGE\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Deploy previous image
-        run: flyctl deploy --app budoso-homepage --image "$ROLLBACK_IMAGE"
+        run: flyctl deploy --app budoso-homepage --image "$TARGET_IMAGE"
 
       - name: Smoke-test production
         run: |
