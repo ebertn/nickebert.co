@@ -14,6 +14,10 @@
       "/unsure-calculator/*"
     ]
   },
+  "services": [
+    { "binding": "ATOM_VISUALIZER", "service": "atom-visualizer" },
+    { "binding": "UNSURE_CALCULATOR", "service": "unsure-calculator" }
+  ],
   "routes": [
     { "pattern": "nickebert.co", "custom_domain": true },
     { "pattern": "www.nickebert.co", "custom_domain": true }

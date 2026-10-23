@@ -1,22 +1,23 @@
 // Static assets in dist/ are served by Workers Static Assets. This script only
-// runs for the proxied apps listed in wrangler.jsonc `assets.run_worker_first`.
-const PROXIES = {
-  '/atom-visualizer': 'https://atom-visualizer.fly.dev',
-  '/unsure-calculator': 'https://unsure-calculator.fly.dev',
+// runs for the apps listed in wrangler.jsonc `assets.run_worker_first`, which
+// live in their own Workers and are reached through service bindings.
+const APPS = {
+  '/atom-visualizer': 'ATOM_VISUALIZER',
+  '/unsure-calculator': 'UNSURE_CALCULATOR',
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
 
-    for (const [prefix, origin] of Object.entries(PROXIES)) {
+    for (const [prefix, binding] of Object.entries(APPS)) {
       if (url.pathname === prefix) {
         url.pathname = `${prefix}/`
         return Response.redirect(url.toString(), 301)
       }
       if (url.pathname.startsWith(`${prefix}/`)) {
-        const target = new URL(url.pathname.slice(prefix.length) + url.search, origin)
-        return fetch(new Request(target, request))
+        url.pathname = url.pathname.slice(prefix.length)
+        return env[binding].fetch(new Request(url, request))
       }
     }
 

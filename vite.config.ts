@@ -11,12 +11,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/atom-visualizer': {
-        target: 'https://atom-visualizer.fly.dev',
+        target: 'https://nickebert.co',
         changeOrigin: true,
         secure: true,
       },
       '/unsure-calculator': {
-        target: 'https://unsure-calculator.fly.dev',
+        target: 'https://nickebert.co',
         changeOrigin: true,
         secure: true,
       }

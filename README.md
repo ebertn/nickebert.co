@@ -6,7 +6,8 @@ Check it out live here: https://nickebert.co
 
 The site runs on Cloudflare Workers as the `nickebert-co` Worker (see `wrangler.jsonc`). The Vite
 build in `dist/` is served as static assets with SPA fallback. `worker/index.js` only handles
-`/atom-visualizer/` and `/unsure-calculator/`, which it proxies to their Fly.io apps.
+`/atom-visualizer/` and `/unsure-calculator/`, which it forwards (minus the prefix) to the `atom-visualizer` and
+`unsure-calculator` Workers through service bindings. Those apps deploy from their own repos.
 
 Pull requests to `main` run the type-check and production build. A successful push to `main`
 deploys with `wrangler deploy` and smoke-tests the homepage, resume, and a proxied app.
